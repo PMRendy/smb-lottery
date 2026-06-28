@@ -1,5 +1,5 @@
-[index.html](https://github.com/user-attachments/files/29441184/index.html)
-# smb-lottery<!DOCTYPE html>
+[index.html](https://github.com/user-attachments/files/29441525/index.html)
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -578,8 +578,18 @@ async function postSelectedSummary(){
 async function slackPost(text){
   const WEBHOOK='https://hooks.slack.com/services/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';
   try{
-    await fetch(WEBHOOK,{method:'POST',mode:'no-cors',body:JSON.stringify({text})});
-    addLog('Slack: message sent');return true;
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Send a message to Slack channel #general-all-smb-staff with this exact text:\n\n${text}`}],
+        mcp_servers:[{type:'url',url:'https://mcp.slack.com/mcp',name:'slack'}]
+      })
+    });
+    if(res.ok){addLog('Slack: message sent');return true;}
+    addLog(`Slack post failed — ${res.status}`);return false;
   } catch(e){
     addLog('Slack post failed — '+e.message);return false;
   }
