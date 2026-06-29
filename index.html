@@ -228,6 +228,7 @@ function disableGrid(yes){document.querySelectorAll('.num-btn').forEach(b=>b.dis
 function submitPicks(){
   if(picks.length!==5){$('pickErr').textContent='Pick exactly 5.';return}
   S.entries[currentUser.name]={picks:[...picks],locked:true};
+  submitEntryToServer(currentUser.name,[...picks]);
   disableGrid(true);$('submitBtn').disabled=true;$('alreadyMsg').style.display='block';
 }
 
@@ -235,6 +236,8 @@ function submitPicks(){
 function loadAdmin(){
   $('announceTime').value=S.announceTime;
   renderSlots();renderDrawBalls();drawWheel(wheelAngle,null);renderEntries();renderHistory();renderLog();
+  syncEntries();
+  setInterval(syncEntries, 10000); // sync every 10 seconds
   startClock();
 }
 function switchTab(t){
@@ -293,13 +296,32 @@ function startClock(){
 // ── SLACK ──
 async function postToSlack(text){
   try{
-    const res=await fetch(RENDER_URL,{
+    const res=await fetch(RENDER_URL+'/slack',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({text})
     });
     return res.ok;
   }catch(e){addLog('Slack error: '+e.message);return false;}
+}
+
+// ── ENTRIES SYNC ──
+async function syncEntries(){
+  try{
+    const res=await fetch(RENDER_URL+'/entries');
+    const data=await res.json();
+    Object.assign(S.entries,data);
+    renderEntries();
+  }catch(e){}
+}
+async function submitEntryToServer(name,picks){
+  try{
+    await fetch(RENDER_URL+'/entries',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,picks})
+    });
+  }catch(e){}
 }
 
 // ── DRAW ENGINE ──
