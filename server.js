@@ -1,9 +1,10 @@
 const https = require("https");
+const fs = require("fs");
+const path = require("path");
 const PORT = process.env.PORT || 3000;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
-// In-memory store (persists while Render is awake)
-const store = { entries: {}, drawHistory: [] };
+const store = { entries: {} };
 
 require("http").createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,9 +16,16 @@ require("http").createServer((req, res) => {
   req.on("data", c => body += c);
   req.on("end", () => {
 
-    // Health check
-    if (req.method === "GET" && req.url === "/") {
-      res.writeHead(200); res.end("SMB Lottery Proxy running"); return;
+    // Serve the lottery HTML app
+    if (req.method === "GET" && (req.url === "/" || req.url === "/index.html")) {
+      const file = path.join(__dirname, "index.html");
+      if (fs.existsSync(file)) {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(fs.readFileSync(file));
+      } else {
+        res.writeHead(404); res.end("index.html not found");
+      }
+      return;
     }
 
     // POST to Slack
@@ -27,20 +35,23 @@ require("http").createServer((req, res) => {
         const payload = JSON.stringify({ text });
         const url = new URL(SLACK_WEBHOOK_URL);
         const opts = { hostname: url.hostname, path: url.pathname, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) } };
-        const sr = https.request(opts, r => { res.writeHead(200); res.end(JSON.stringify({ ok: r.statusCode === 200 })); });
+        const sr = https.request(opts, r => {
+          console.log("Slack status:", r.statusCode);
+          res.writeHead(200); res.end(JSON.stringify({ ok: r.statusCode === 200 }));
+        });
         sr.on("error", e => { res.writeHead(500); res.end(JSON.stringify({ ok: false, error: e.message })); });
         sr.write(payload); sr.end();
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ ok: false })); }
       return;
     }
 
-    // GET all entries
+    // GET entries
     if (req.method === "GET" && req.url === "/entries") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(store.entries)); return;
     }
 
-    // POST submit entry
+    // POST entry
     if (req.method === "POST" && req.url === "/entries") {
       try {
         const { name, picks } = JSON.parse(body);
@@ -50,7 +61,7 @@ require("http").createServer((req, res) => {
       return;
     }
 
-    // DELETE reset entries
+    // Reset entries
     if (req.method === "POST" && req.url === "/entries/reset") {
       store.entries = {};
       res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
