@@ -308,7 +308,7 @@ function startClock(){
       }
     });
     const acd=$('announceCd');if(acd){const ms=msUntil(S.announceTime);acd.textContent=fmtMs(ms);acd.className='cd'+(ms<60000?' hot':'');}
-    if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);}
+    if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);autoStopLottery();}
   },1000);
 }
 
@@ -392,6 +392,17 @@ async function stopLottery(){
     S.started=false;updateStatusUI();
     addLog('Lottery stopped by admin');
   }catch(e){}
+}
+async function autoStopLottery(){
+  if(!S.started)return;
+  try{
+    await fetch(RENDER_URL+'/stop',{method:'POST'});
+    S.started=false;updateStatusUI();
+    addLog('Lottery auto-stopped at announcement time');
+    const thanks=`🌙 *That's a wrap, SMB Fam!* 🌙\n\nTonight's Bayaning Puyat Lottery has officially closed. Thank you to everyone who joined in the fun! 🎱✨\n\nOur Project Manager, Sir Rendy, wishes you all a well-deserved rest and wants you to know how proud he is to have each and every one of you on this team. 💙\n\nKeep shining, keep showing up — see you at the next draw! 🌟`;
+    const ok=await postToSlack(thanks);
+    addLog(ok?'Slack: thank-you message posted ✅':'Slack: thank-you failed ❌');
+  }catch(e){addLog('Auto-stop failed: '+e.message)}
 }
 
 // ── DRAW ENGINE ──
