@@ -4,7 +4,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
-const store = { entries: {} };
+const store = { entries: {}, started: false, prize: "" };
 
 require("http").createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -64,6 +64,30 @@ require("http").createServer((req, res) => {
     // Reset entries
     if (req.method === "POST" && req.url === "/entries/reset") {
       store.entries = {};
+      res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
+    }
+
+    // GET lottery status (started + prize)
+    if (req.method === "GET" && req.url === "/status") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ started: store.started, prize: store.prize })); return;
+    }
+
+    // POST start lottery (sets prize + started flag)
+    if (req.method === "POST" && req.url === "/start") {
+      try {
+        const { prize } = JSON.parse(body);
+        store.started = true;
+        store.prize = prize || "";
+        store.entries = {};
+        res.writeHead(200); res.end(JSON.stringify({ ok: true }));
+      } catch { res.writeHead(400); res.end(JSON.stringify({ ok: false })); }
+      return;
+    }
+
+    // POST stop lottery
+    if (req.method === "POST" && req.url === "/stop") {
+      store.started = false;
       res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
     }
 
