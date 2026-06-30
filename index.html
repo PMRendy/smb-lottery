@@ -104,7 +104,15 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
     </div>
 
     <div id="tabSchedule" class="card">
-      <div class="auto-badge"><span class="dot"></span>Auto-draw active</div>
+      <div class="auto-badge"><span class="dot" id="statusDot"></span><span id="statusText">Lottery not started</span></div>
+
+      <p class="lbl">Prize for this shift</p>
+      <input type="text" id="prizeInput" placeholder="e.g. ₱500 GCash, Day off, etc.">
+      <button class="success" id="startBtn" onclick="startLottery()">🚀 Start Lottery</button>
+      <button class="warn" id="stopBtn" onclick="stopLottery()" style="display:none">Stop Lottery</button>
+      <p id="startMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:-4px;min-height:18px"></p>
+
+      <hr>
       <p class="lbl">Draw times (PHT)</p>
       <div id="drawSlots"></div>
       <button class="primary" onclick="saveSchedule()">Save schedule</button>
@@ -173,7 +181,8 @@ const S = {
   adminPin:'010285', agentPin:'12345',
   entries:{}, drawTimes:['01:00','02:00','03:00','04:00','05:00'],
   announceTime:'06:00', announceFired:false,
-  currentNums:[], drawHistory:[], selectedDraws:[]
+  currentNums:[], drawHistory:[], selectedDraws:[],
+  started:false, prize:''
 };
 
 let currentUser=null, wheelAngle=0, spinning=false, actLog=[], masterClock=null;
@@ -194,10 +203,19 @@ $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 
 // ── AGENT ──
 let picks=[];
-function loadAgent(){
+async function loadAgent(){
   const n=currentUser.name;
   $('agentName').textContent=n;
   $('agentInitials').textContent=n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  try{
+    const res=await fetch(RENDER_URL+'/status');
+    const data=await res.json();
+    S.started=data.started;S.prize=data.prize;
+  }catch(e){}
+  if(!S.started){
+    $('pickScreen').innerHTML='<div class="card" style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><p style="font-size:15px;font-weight:500;margin-bottom:6px">Lottery hasn\'t started yet</p><p style="font-size:13px;color:#aaa">Check back once admin opens tonight\'s draw!</p><button onclick="logout()" style="margin-top:14px">Log out</button></div>';
+    return;
+  }
   picks=(S.entries[n]?.picks)||[];
   buildGrid();renderBubbles();
   const locked=!!S.entries[n]?.locked;
@@ -236,8 +254,9 @@ function submitPicks(){
 function loadAdmin(){
   $('announceTime').value=S.announceTime;
   renderSlots();renderDrawBalls();drawWheel(wheelAngle,null);renderEntries();renderHistory();renderLog();
-  syncEntries();
-  setInterval(syncEntries, 10000); // sync every 10 seconds
+  syncEntries();syncStatus();
+  setInterval(syncEntries, 10000);
+  setInterval(syncStatus, 10000);
   startClock();
 }
 function switchTab(t){
@@ -283,7 +302,7 @@ function startClock(){
     const sec=now.getSeconds();
     S.drawTimes.forEach((t,i)=>{
       const el=$(`cd${i}`);if(el){const ms=msUntil(t);el.textContent=fmtMs(ms);el.className='cd'+(ms<60000?' hot':'');}
-      if(t===hhmm&&sec===0&&!firedTimes.has(t+'-'+now.toDateString())&&!spinning){
+      if(t===hhmm&&sec===0&&!firedTimes.has(t+'-'+now.toDateString())&&!spinning&&S.started){
         firedTimes.add(t+'-'+now.toDateString());
         addLog(`Auto-draw at ${t} PHT`);runDraw(`Draw at ${t} PHT`,false);
       }
@@ -321,6 +340,57 @@ async function submitEntryToServer(name,picks){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name,picks})
     });
+  }catch(e){}
+}
+
+// ── LOTTERY START/STOP ──
+async function syncStatus(){
+  try{
+    const res=await fetch(RENDER_URL+'/status');
+    const data=await res.json();
+    S.started=data.started;S.prize=data.prize;
+    updateStatusUI();
+  }catch(e){}
+}
+function updateStatusUI(){
+  const dot=$('statusDot'),txt=$('statusText'),sb=$('startBtn'),xb=$('stopBtn'),pi=$('prizeInput');
+  if(!dot)return;
+  if(S.started){
+    dot.style.background='#3b6d11';txt.textContent='Lottery active — Prize: '+(S.prize||'TBA');
+    sb.style.display='none';xb.style.display='block';pi.disabled=true;
+  }else{
+    dot.style.background='#aaa';txt.textContent='Lottery not started';
+    sb.style.display='block';xb.style.display='none';pi.disabled=false;
+  }
+}
+async function startLottery(){
+  const prize=$('prizeInput').value.trim();
+  if(!prize){$('startMsg').textContent='Please enter a prize first.';$('startMsg').style.color='#a32d2d';return}
+  try{
+    await fetch(RENDER_URL+'/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prize})});
+    S.started=true;S.prize=prize;S.entries={};
+    updateStatusUI();renderEntries();
+    addLog('Lottery started — Prize: '+prize);
+    $('startMsg').textContent='Lottery started!';$('startMsg').style.color='#3b6d11';
+    setTimeout(()=>$('startMsg').textContent='',2500);
+
+    const siteUrl=window.location.href.split('?')[0];
+    const phrases=[
+      "🎉 IT'S LOTTERY TIME, SMB FAM! 🎉",
+      "🔥 Tonight's jackpot is calling your name! 🔥",
+      "✨ Lucky numbers, lucky you — let's go! ✨"
+    ];
+    const hook=phrases[Math.floor(Math.random()*phrases.length)];
+    const text=`${hook}\n\n🎱 *SMB Lottery — Bayaning Puyat Draw* is now OPEN for tonight's shift!\n\n🏆 *Prize:* ${prize}\n🔢 Pick your 5 lucky numbers (1–42) before the draw!\n\n👉 *Enter here:* ${siteUrl}\n\nDraws happen automatically throughout the shift — good luck, everyone! 🍀`;
+    const ok=await postToSlack(text);
+    addLog(ok?'Slack: lottery announcement posted ✅':'Slack: announcement failed ❌');
+  }catch(e){addLog('Start failed: '+e.message)}
+}
+async function stopLottery(){
+  try{
+    await fetch(RENDER_URL+'/stop',{method:'POST'});
+    S.started=false;updateStatusUI();
+    addLog('Lottery stopped by admin');
   }catch(e){}
 }
 
