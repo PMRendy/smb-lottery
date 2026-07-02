@@ -9,16 +9,18 @@
 body{font-family:system-ui,sans-serif;background:#f5f5f3;color:#1a1a18;min-height:100vh}
 .screen{display:none;min-height:100vh;padding:1.5rem}
 .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.5rem;width:100%;max-width:500px}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.5rem;width:100%;max-width:500px;margin-bottom:0}
 input[type=text],input[type=password],input[type=time]{width:100%;padding:10px 12px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;font-size:15px;background:#f9f9f7;color:#1a1a18;margin-bottom:12px;outline:none}
 input:focus{border-color:#378add;box-shadow:0 0 0 3px rgba(55,138,221,.15)}
+input:disabled{opacity:.5}
 button{width:100%;padding:10px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;background:transparent;color:#1a1a18;font-size:14px;cursor:pointer;margin-bottom:8px;transition:background .15s}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.primary{background:#1a1a18;color:#fff;border-color:#1a1a18}
 button.accent{background:#185fa5;color:#fff;border-color:#185fa5}
 button.success{background:#3b6d11;color:#fff;border-color:#3b6d11}
 button.warn{background:#854f0b;color:#fff;border-color:#854f0b}
-.lbl{font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px;letter-spacing:.04em}
+button.danger{background:#a32d2d;color:#fff;border-color:#a32d2d}
+.lbl{font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px;letter-spacing:.04em;display:block}
 .num-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:1rem 0}
 .num-btn{aspect-ratio:1;border-radius:50%;border:0.5px solid rgba(0,0,0,.2);background:#f9f9f7;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .num-btn.selected{background:#185fa5;border-color:#185fa5;color:#fff}
@@ -46,9 +48,17 @@ button.warn{background:#854f0b;color:#fff;border-color:#854f0b}
 .h-balls{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .h-ball{width:26px;height:26px;border-radius:50%;background:#e6f1fb;color:#0c447c;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center}
 hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
-.auto-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:#eaf3de;color:#3b6d11;padding:4px 10px;border-radius:20px;margin-bottom:12px}
-.dot{width:7px;height:7px;border-radius:50%;background:#3b6d11;animation:blink 1.2s infinite;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:20px;margin-bottom:12px}
+.badge.active{background:#eaf3de;color:#3b6d11}
+.badge.inactive{background:#f0f0ee;color:#888}
+.badge.weekend{background:#faeeda;color:#633806}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;animation:blink 1.2s infinite}
+.dot.green{background:#3b6d11}
+.dot.grey{background:#aaa;animation:none}
+.dot.orange{background:#854f0b}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.info-box{background:#f0f5ff;border:0.5px solid #c5d8f5;border-radius:8px;padding:10px 12px;font-size:12px;color:#0c447c;margin-bottom:12px;line-height:1.6}
+.warning-box{background:#faeeda;border:0.5px solid #e0c080;border-radius:8px;padding:10px 12px;font-size:12px;color:#633806;margin-bottom:12px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -60,9 +70,9 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
     <p style="font-size:13px;color:#888">Bayaning Puyat Draw — pick 5 lucky numbers</p>
   </div>
   <div class="card">
-    <p class="lbl">Your name</p>
+    <label class="lbl">Your name</label>
     <input type="text" id="loginName" placeholder="Enter your name" autocomplete="off">
-    <p class="lbl">PIN</p>
+    <label class="lbl">PIN</label>
     <input type="password" id="loginPin" placeholder="•••••" maxlength="10">
     <p id="loginErr" style="font-size:13px;color:#a32d2d;text-align:center;min-height:18px;margin-bottom:8px"></p>
     <button class="primary" onclick="doLogin()">Continue</button>
@@ -77,15 +87,7 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
       <div><p id="agentName" style="font-size:15px;font-weight:500"></p><p style="font-size:12px;color:#aaa">Pick 5 numbers · 1 to 42</p></div>
       <button onclick="logout()" style="width:auto;padding:6px 12px;margin:0;margin-left:auto;font-size:12px">Log out</button>
     </div>
-    <div class="card">
-      <p class="lbl">Your picks</p>
-      <div class="picks-row" id="picksRow"></div>
-      <div class="num-grid" id="numGrid"></div>
-      <p id="pickErr" style="font-size:13px;color:#a32d2d;text-align:center;min-height:18px"></p>
-      <button class="accent" id="submitBtn" onclick="submitPicks()" disabled>Submit picks</button>
-      <button onclick="clearPicks()">Clear</button>
-    </div>
-    <p id="alreadyMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:10px;display:none">Picks locked in. Good luck!</p>
+    <div id="agentContent"></div>
   </div>
 </div>
 
@@ -103,34 +105,32 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
       <button class="tab" onclick="switchTab('settings')">Settings</button>
     </div>
 
+    <!-- SCHEDULE TAB -->
     <div id="tabSchedule" class="card">
-      <div class="auto-badge"><span class="dot" id="statusDot"></span><span id="statusText">Lottery not started</span></div>
+      <div id="lotteryBadge" class="badge inactive"><span class="dot grey"></span><span id="badgeText">Lottery not started</span></div>
 
-      <p class="lbl">Prize for this shift</p>
-      <input type="text" id="prizeInput" placeholder="e.g. ₱500 GCash, Day off, etc.">
+      <label class="lbl">Prize for this shift</label>
+      <input type="text" id="prizeInput" value="PHP 250.00" placeholder="e.g. PHP 250.00, Day off...">
       <button class="success" id="startBtn" onclick="startLottery()">🚀 Start Lottery</button>
-      <button class="warn" id="stopBtn" onclick="stopLottery()" style="display:none">Stop Lottery</button>
-      <p id="startMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:-4px;min-height:18px"></p>
-
+      <button class="danger" id="stopBtn" onclick="stopLottery()" style="display:none">Stop Lottery</button>
+      <p id="startMsg" style="font-size:13px;text-align:center;margin-top:-4px;min-height:18px"></p>
       <hr>
-      <p class="lbl">Draw times (PHT)</p>
+      <label class="lbl">Draw times (PHT)</label>
       <div id="drawSlots"></div>
-      <button class="primary" onclick="saveSchedule()">Save schedule</button>
+      <button class="primary" onclick="saveSchedule()">Save draw schedule</button>
       <p id="scheduleMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:6px;min-height:18px"></p>
       <hr>
-      <p class="lbl">Announcement time (PHT)</p>
+      <label class="lbl">Announcement time (PHT)</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <input type="time" id="announceTime" value="06:00" style="flex:1;margin:0">
+        <input type="time" id="announceTime" value="04:55" style="flex:1;margin:0">
         <span class="cd" id="announceCd">--:--:--</span>
       </div>
       <button class="primary" onclick="saveAnnounce()">Save announcement time</button>
-      <hr>
-      <button class="warn" onclick="testDraw()">Run test draw now</button>
-      <p style="font-size:12px;color:#aaa;text-align:center;margin-top:-4px">Fires a full draw immediately and posts each number to Slack.</p>
     </div>
 
+    <!-- DRAW TAB -->
     <div id="tabDraw" class="card" style="display:none">
-      <p class="lbl">Current draw</p>
+      <label class="lbl">Current draw</label>
       <p id="drawLabel" style="font-size:13px;color:#aaa;margin-bottom:10px">Waiting for next scheduled draw</p>
       <div class="drawn-nums" id="drawnNums"></div>
       <div style="display:flex;justify-content:center;margin:8px 0">
@@ -140,18 +140,20 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
       <button class="accent" id="spinBtn" onclick="manualSpin()">Spin wheel</button>
       <button onclick="resetDraw()">Reset draw</button>
       <hr>
-      <p class="lbl">Activity log</p>
+      <label class="lbl">Activity log</label>
       <div class="log-list" id="logList"><p style="font-size:12px;color:#aaa">No activity yet.</p></div>
     </div>
 
+    <!-- ENTRIES TAB -->
     <div id="tabEntries" class="card" style="display:none">
-      <p class="lbl">Agent entries (<span id="entryCount">0</span>)</p>
+      <label class="lbl">Agent entries (<span id="entryCount">0</span>)</label>
       <div class="entries-list" id="entriesList"></div>
     </div>
 
+    <!-- HISTORY TAB -->
     <div id="tabHistory" class="card" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <p class="lbl" style="margin:0">Completed draws</p>
+        <label class="lbl" style="margin:0">Completed draws</label>
         <button onclick="toggleAll()" id="selAllBtn" style="width:auto;padding:4px 10px;margin:0;font-size:12px">Deselect all</button>
       </div>
       <div id="historyList"><p style="font-size:13px;color:#aaa">No draws yet.</p></div>
@@ -159,12 +161,29 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
       <button class="success" onclick="postSelected()">Post selected to Slack</button>
     </div>
 
+    <!-- SETTINGS TAB -->
     <div id="tabSettings" class="card" style="display:none">
-      <p class="lbl">Admin PIN</p>
+      <label class="lbl">Auto-start time (PHT)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <input type="time" id="autoStartTime" value="22:30" style="flex:1;margin:0">
+        <span class="cd" id="autoStartCd">--:--:--</span>
+      </div>
+      <div class="info-box">⏰ The lottery will auto-start at this time on weekdays, using the default prize (PHP 250.00) unless overridden in Schedule tab.</div>
+
+      <label class="lbl">Entry lock time (PHT)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <input type="time" id="lockTime" value="23:00" style="flex:1;margin:0">
+        <span class="cd" id="lockCd">--:--:--</span>
+      </div>
+      <div class="info-box">🔒 After this time, agents can no longer submit or change their picks.</div>
+      <button class="primary" onclick="saveAutoSettings()">Save auto settings</button>
+      <p id="autoSettingsMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:6px;min-height:18px"></p>
+      <hr>
+      <label class="lbl">Admin PIN</label>
       <input type="password" id="newAdmin" placeholder="Leave blank to keep current">
-      <p class="lbl">Agent PIN</p>
+      <label class="lbl">Agent PIN</label>
       <input type="password" id="newAgent" placeholder="Leave blank to keep current">
-      <button class="primary" onclick="saveSettings()">Save settings</button>
+      <button class="primary" onclick="saveSettings()">Save PIN settings</button>
       <p id="settingsMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:6px;min-height:18px"></p>
     </div>
   </div>
@@ -173,16 +192,43 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.08);margin:1rem 0}
 <script>
 const RENDER_URL = 'https://smb-lottery-proxy.onrender.com';
 const COLORS = ['#185fa5','#3b6d11','#993c1d','#534ab7','#854f0b','#7f77dd','#d4537e','#0f6e56','#633806','#a32d2d'];
+const DEFAULT_DRAW_TIMES = ['23:00','00:00','01:00','02:00','03:00','04:00'];
+const DEFAULT_PRIZE = 'PHP 250.00';
+
+// Motivational quotes from Sir Rendy
+const QUOTES = [
+  { quote: "The secret of getting ahead is getting started.", attr: "Mark Twain" },
+  { quote: "Hard work beats talent when talent doesn't work hard.", attr: "Tim Notke" },
+  { quote: "Success is not final, failure is not fatal — it is the courage to continue that counts.", attr: "Winston Churchill" },
+  { quote: "Alone we can do so little; together we can do so much.", attr: "Helen Keller" },
+  { quote: "Loyalty means nothing unless it has at its heart the absolute principle of self-sacrifice.", attr: "Woodrow Wilson" },
+  { quote: "The strength of the team is each individual member. The strength of each member is the team.", attr: "Phil Jackson" },
+  { quote: "Coming together is a beginning, staying together is progress, working together is success.", attr: "Henry Ford" },
+  { quote: "Talent wins games, but teamwork and intelligence win championships.", attr: "Michael Jordan" },
+  { quote: "Great things in business are never done by one person. They're done by a team of people.", attr: "Steve Jobs" },
+  { quote: "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.", attr: "Steve Jobs" },
+  { quote: "Without loyalty, nothing can be built — families, teams, businesses all depend on it.", attr: "Unknown" },
+  { quote: "A dream doesn't become reality through magic; it takes sweat, determination and hard work.", attr: "Colin Powell" },
+  { quote: "Teamwork makes the dream work.", attr: "John C. Maxwell" },
+  { quote: "The only way to do great work is to love what you do.", attr: "Steve Jobs" },
+  { quote: "Every accomplishment starts with the decision to try.", attr: "John F. Kennedy" },
+];
 
 // Wake up Render on page load
-fetch('https://smb-lottery-proxy.onrender.com').catch(()=>{});
+fetch(RENDER_URL).catch(()=>{});
 
 const S = {
   adminPin:'010285', agentPin:'12345',
-  entries:{}, drawTimes:['01:00','02:00','03:00','04:00','05:00'],
-  announceTime:'06:00', announceFired:false,
+  entries:{},
+  drawTimes:[...DEFAULT_DRAW_TIMES],
+  announceTime:'04:55',
+  autoStartTime:'22:30',
+  lockTime:'23:00',
+  announceFired:false,
+  autoStartFired:false,
+  lockFired:false,
   currentNums:[], drawHistory:[], selectedDraws:[],
-  started:false, prize:''
+  started:false, prize:DEFAULT_PRIZE, entriesLocked:false
 };
 
 let currentUser=null, wheelAngle=0, spinning=false, actLog=[], masterClock=null;
@@ -191,6 +237,11 @@ const firedTimes=new Set();
 function $(id){return document.getElementById(id)}
 function screen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
 function logout(){currentUser=null;$('loginName').value='';$('loginPin').value='';$('loginErr').textContent='';if(masterClock)clearInterval(masterClock);screen('loginScreen')}
+
+function isWeekend(){
+  const d=new Date().getDay(); // 0=Sun, 6=Sat
+  return d===0||d===6;
+}
 
 function doLogin(){
   const name=$('loginName').value.trim(), pin=$('loginPin').value.trim();
@@ -207,23 +258,42 @@ async function loadAgent(){
   const n=currentUser.name;
   $('agentName').textContent=n;
   $('agentInitials').textContent=n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const content=$('agentContent');
+  // Weekend check
+  if(isWeekend()){
+    content.innerHTML=`<div class="card" style="text-align:center"><div style="font-size:36px;margin-bottom:10px">🌴</div><p style="font-size:15px;font-weight:500;margin-bottom:6px">It's the weekend!</p><p style="font-size:13px;color:#aaa">SMB Lottery only runs on weekdays. Enjoy your rest day!</p><button onclick="logout()" style="margin-top:14px">Log out</button></div>`;
+    return;
+  }
   try{
     const res=await fetch(RENDER_URL+'/status');
     const data=await res.json();
-    S.started=data.started;S.prize=data.prize;
+    S.started=data.started;S.prize=data.prize;S.entriesLocked=data.entriesLocked||false;
   }catch(e){}
   if(!S.started){
-    $('pickScreen').innerHTML='<div class="card" style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><p style="font-size:15px;font-weight:500;margin-bottom:6px">Lottery hasn\'t started yet</p><p style="font-size:13px;color:#aaa">Check back once admin opens tonight\'s draw!</p><button onclick="logout()" style="margin-top:14px">Log out</button></div>';
+    content.innerHTML=`<div class="card" style="text-align:center"><div style="font-size:36px;margin-bottom:10px">⏳</div><p style="font-size:15px;font-weight:500;margin-bottom:6px">Lottery hasn't started yet</p><p style="font-size:13px;color:#aaa">Check back once admin opens tonight's draw!</p><button onclick="logout()" style="margin-top:14px">Log out</button></div>`;
     return;
   }
+  const locked=S.entriesLocked||!!S.entries[n]?.locked;
+  content.innerHTML=`
+    <div class="card">
+      ${S.prize?`<div style="text-align:center;margin-bottom:12px"><span style="font-size:13px;color:#aaa">Tonight's prize</span><p style="font-size:20px;font-weight:500;color:#3b6d11">🏆 ${S.prize}</p></div>`:''}
+      ${locked&&!S.entries[n]?.locked?`<div class="warning-box">🔒 Entries are now locked for this shift. Submission is closed.</div>`:''}
+      <label class="lbl">Your picks</label>
+      <div class="picks-row" id="picksRow"></div>
+      <div class="num-grid" id="numGrid"></div>
+      <p id="pickErr" style="font-size:13px;color:#a32d2d;text-align:center;min-height:18px"></p>
+      <button class="accent" id="submitBtn" onclick="submitPicks()" ${locked?'disabled':''}>Submit picks</button>
+      <button onclick="clearPicks()" ${locked?'disabled':''}>Clear</button>
+      <p id="alreadyMsg" style="font-size:13px;color:#3b6d11;text-align:center;margin-top:10px;display:${S.entries[n]?.locked?'block':'none'}">✅ Picks locked in! Screenshot your numbers as proof. Good luck!</p>
+      ${S.entries[n]?.locked?`<div class="info-box">📸 Please screenshot your selected numbers above as your receipt in case you win!</div>`:''}
+    </div>`;
   picks=(S.entries[n]?.picks)||[];
   buildGrid();renderBubbles();
-  const locked=!!S.entries[n]?.locked;
-  disableGrid(locked);$('submitBtn').disabled=locked||picks.length!==5;
-  $('alreadyMsg').style.display=locked?'block':'none';
+  if(locked) disableGrid(true);
 }
+
 function buildGrid(){
-  const g=$('numGrid');g.innerHTML='';
+  const g=$('numGrid');if(!g)return;g.innerHTML='';
   for(let i=1;i<=42;i++){
     const b=document.createElement('button');
     b.className='num-btn'+(picks.includes(i)?' selected':'');
@@ -231,34 +301,47 @@ function buildGrid(){
   }
 }
 function togglePick(n,btn){
-  if(S.entries[currentUser?.name]?.locked)return;
+  if(S.entries[currentUser?.name]?.locked||S.entriesLocked)return;
   const idx=picks.indexOf(n);
   if(idx>-1){picks.splice(idx,1);btn.classList.remove('selected')}
   else{if(picks.length>=5){$('pickErr').textContent='Max 5 numbers.';return}picks.push(n);btn.classList.add('selected')}
-  $('pickErr').textContent='';renderBubbles();$('submitBtn').disabled=picks.length!==5;
+  $('pickErr').textContent='';renderBubbles();
+  const sb=$('submitBtn');if(sb)sb.disabled=picks.length!==5;
 }
 function renderBubbles(){
-  const r=$('picksRow');r.innerHTML='';
+  const r=$('picksRow');if(!r)return;r.innerHTML='';
   for(let i=0;i<5;i++){const d=document.createElement('div');d.className='bubble'+(picks[i]!==undefined?' filled':'');d.textContent=picks[i]??'';r.appendChild(d);}
 }
-function clearPicks(){picks=[];buildGrid();renderBubbles();$('submitBtn').disabled=true}
+function clearPicks(){picks=[];buildGrid();renderBubbles();const sb=$('submitBtn');if(sb)sb.disabled=true;}
 function disableGrid(yes){document.querySelectorAll('.num-btn').forEach(b=>b.disabled=yes)}
 function submitPicks(){
   if(picks.length!==5){$('pickErr').textContent='Pick exactly 5.';return}
   S.entries[currentUser.name]={picks:[...picks],locked:true};
   submitEntryToServer(currentUser.name,[...picks]);
-  disableGrid(true);$('submitBtn').disabled=true;$('alreadyMsg').style.display='block';
+  disableGrid(true);
+  const sb=$('submitBtn');if(sb)sb.disabled=true;
+  const am=$('alreadyMsg');if(am)am.style.display='block';
+  // Show receipt reminder
+  const content=$('agentContent');
+  const infoBox=content.querySelector('.info-box');
+  if(!infoBox){
+    const div=document.createElement('div');div.className='info-box';
+    div.textContent='📸 Please screenshot your selected numbers as your receipt in case you win!';
+    content.querySelector('.card').appendChild(div);
+  }
 }
 
 // ── ADMIN ──
 function loadAdmin(){
   $('announceTime').value=S.announceTime;
+  $('autoStartTime').value=S.autoStartTime;
+  $('lockTime').value=S.lockTime;
   renderSlots();renderDrawBalls();drawWheel(wheelAngle,null);renderEntries();renderHistory();renderLog();
   syncEntries();syncStatus();
-  setInterval(syncEntries, 10000);
-  setInterval(syncStatus, 10000);
+  setInterval(syncEntries,10000);setInterval(syncStatus,10000);
   startClock();
 }
+
 function switchTab(t){
   ['schedule','draw','entries','history','settings'].forEach(x=>{
     $('tab'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===t?'':'none';
@@ -268,6 +351,7 @@ function switchTab(t){
   if(t==='history')renderHistory();
   if(t==='draw'){renderDrawBalls();drawWheel(wheelAngle,null);renderLog();}
 }
+
 function renderSlots(){
   const c=$('drawSlots');c.innerHTML='';
   S.drawTimes.forEach((t,i)=>{
@@ -282,6 +366,12 @@ function saveSchedule(){
   $('scheduleMsg').textContent='Saved.';setTimeout(()=>$('scheduleMsg').textContent='',2000);
 }
 function saveAnnounce(){S.announceTime=$('announceTime').value;S.announceFired=false;}
+function saveAutoSettings(){
+  S.autoStartTime=$('autoStartTime').value;
+  S.lockTime=$('lockTime').value;
+  S.autoStartFired=false;S.lockFired=false;
+  $('autoSettingsMsg').textContent='Saved.';setTimeout(()=>$('autoSettingsMsg').textContent='',2000);
+}
 function saveSettings(){
   const a=$('newAdmin').value.trim(),g=$('newAgent').value.trim();
   if(a)S.adminPin=a;if(g)S.agentPin=g;
@@ -297,29 +387,129 @@ function fmtMs(ms){return[Math.floor(ms/3600000),Math.floor((ms%3600000)/60000),
 function startClock(){
   if(masterClock)clearInterval(masterClock);
   masterClock=setInterval(()=>{
+    if(isWeekend()){
+      // Show weekend notice, pause all auto triggers
+      const b=$('lotteryBadge');if(b){b.className='badge weekend';b.innerHTML='<span class="dot orange"></span>Weekend — draws paused';}
+      return;
+    }
     const now=new Date();
     const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     const sec=now.getSeconds();
+    const dateKey=now.toDateString();
+
+    // Draw slot countdowns
     S.drawTimes.forEach((t,i)=>{
       const el=$(`cd${i}`);if(el){const ms=msUntil(t);el.textContent=fmtMs(ms);el.className='cd'+(ms<60000?' hot':'');}
-      if(t===hhmm&&sec===0&&!firedTimes.has(t+'-'+now.toDateString())&&!spinning&&S.started){
-        firedTimes.add(t+'-'+now.toDateString());
+      if(t===hhmm&&sec===0&&!firedTimes.has(t+'-'+dateKey)&&!spinning&&S.started){
+        firedTimes.add(t+'-'+dateKey);
         addLog(`Auto-draw at ${t} PHT`);runDraw(`Draw at ${t} PHT`,false);
       }
     });
+
+    // Announcement countdown + auto-stop
     const acd=$('announceCd');if(acd){const ms=msUntil(S.announceTime);acd.textContent=fmtMs(ms);acd.className='cd'+(ms<60000?' hot':'');}
     if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);autoStopLottery();}
+
+    // Auto-start countdown
+    const ascd=$('autoStartCd');if(ascd){const ms=msUntil(S.autoStartTime);ascd.textContent=fmtMs(ms);ascd.className='cd'+(ms<60000?' hot':'');}
+    if(S.autoStartTime===hhmm&&sec===0&&!S.autoStartFired&&!S.started){
+      S.autoStartFired=true;
+      addLog('Auto-starting lottery at '+S.autoStartTime+' PHT');
+      autoStartLottery();
+    }
+
+    // Entry lock countdown
+    const lkcd=$('lockCd');if(lkcd){const ms=msUntil(S.lockTime);lkcd.textContent=fmtMs(ms);lkcd.className='cd'+(ms<60000?' hot':'');}
+    if(S.lockTime===hhmm&&sec===0&&!S.lockFired&&S.started){
+      S.lockFired=true;
+      lockEntries();
+    }
   },1000);
+}
+
+// ── STATUS SYNC ──
+async function syncStatus(){
+  try{
+    const res=await fetch(RENDER_URL+'/status');
+    const data=await res.json();
+    S.started=data.started;S.prize=data.prize;S.entriesLocked=data.entriesLocked||false;
+    updateStatusUI();
+  }catch(e){}
+}
+function updateStatusUI(){
+  const badge=$('lotteryBadge'),txt=$('badgeText'),sb=$('startBtn'),xb=$('stopBtn'),pi=$('prizeInput');
+  if(!badge||isWeekend())return;
+  if(S.started){
+    badge.className='badge active';badge.innerHTML=`<span class="dot green"></span><span>Lottery active — 🏆 ${S.prize||'TBA'}${S.entriesLocked?' · 🔒 Entries locked':''}</span>`;
+    if(sb)sb.style.display='none';if(xb)xb.style.display='block';if(pi)pi.disabled=true;
+  }else{
+    badge.className='badge inactive';if(txt)txt.textContent='Lottery not started';
+    if(sb)sb.style.display='block';if(xb)xb.style.display='none';if(pi)pi.disabled=false;
+  }
+}
+
+// ── START / STOP ──
+async function autoStartLottery(){
+  const prize=($('prizeInput')?.value.trim())||DEFAULT_PRIZE;
+  await _startLottery(prize);
+}
+async function startLottery(){
+  const prize=$('prizeInput').value.trim()||DEFAULT_PRIZE;
+  await _startLottery(prize);
+}
+async function _startLottery(prize){
+  if(isWeekend()){$('startMsg').textContent='No lottery on weekends!';$('startMsg').style.color='#a32d2d';return;}
+  try{
+    await fetch(RENDER_URL+'/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prize})});
+    S.started=true;S.prize=prize;S.entries={};S.entriesLocked=false;S.autoStartFired=true;
+    updateStatusUI();renderEntries();
+    addLog('Lottery started — Prize: '+prize);
+    $('startMsg').textContent='Lottery started!';$('startMsg').style.color='#3b6d11';
+    setTimeout(()=>{if($('startMsg'))$('startMsg').textContent=''},2500);
+    // Pick a random quote
+    const q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+    const siteUrl=window.location.origin+window.location.pathname;
+    const text=`:lottery: *SMB Lottery — Bayaning Puyat Draw* is now OPEN! 🎉\n\n🏆 *Tonight's Prize:* ${prize}\n🔢 *Pick your 5 lucky numbers* (1–42) before the draw!\n👉 *Enter here:* ${siteUrl}\n\n⏰ Entries lock at ${S.lockTime} PHT — don't miss out!\n📸 *Screenshot your numbers as proof in case you win!*\n\n💬 _A message from Sir Rendy:_\n> "${q.quote}"\n> — ${q.attr}\n\nSir Rendy is proud of every single one of you. Keep up the amazing work tonight! 💙\n\n_SMB VS — Bayaning Puyat Shift_`;
+    const ok=await postToSlack(text);
+    addLog(ok?'Slack: opening announcement posted ✅':'Slack: announcement failed ❌');
+  }catch(e){addLog('Start failed: '+e.message)}
+}
+
+async function stopLottery(){
+  try{
+    await fetch(RENDER_URL+'/stop',{method:'POST'});
+    S.started=false;S.entriesLocked=false;updateStatusUI();
+    addLog('Lottery stopped by admin');
+  }catch(e){}
+}
+
+async function autoStopLottery(){
+  if(!S.started)return;
+  try{
+    await fetch(RENDER_URL+'/stop',{method:'POST'});
+    S.started=false;S.entriesLocked=false;S.announceFired=true;updateStatusUI();
+    addLog('Lottery auto-stopped at announcement time');
+    const q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+    const text=`:night_with_stars: *That's a wrap, SMB Fam!* :night_with_stars:\n\nTonight's Bayaning Puyat Lottery has officially closed. Thank you to every single one of you who joined — you make every shift special! 🎱✨\n\n💬 _A closing word from Sir Rendy:_\n> "${q.quote}"\n> — ${q.attr}\n\n🙏 Sir Rendy wants you all to know — he is genuinely proud to lead this team. Your dedication, loyalty, and hard work don't go unnoticed. Every night you show up, you make SMB VS stronger.\n\nGet some well-deserved rest. See you on the next shift! 💙\n\n_SMB Virtual Staffing — Bayaning Puyat_`;
+    const ok=await postToSlack(text);
+    addLog(ok?'Slack: closing message posted ✅':'Slack: closing failed ❌');
+  }catch(e){addLog('Auto-stop failed: '+e.message)}
+}
+
+async function lockEntries(){
+  try{
+    await fetch(RENDER_URL+'/lock',{method:'POST'});
+    S.entriesLocked=true;updateStatusUI();
+    addLog('Entries locked at '+S.lockTime+' PHT');
+    const ok=await postToSlack(`:lock: *SMB Lottery entries are now closed!* No new picks will be accepted.\n\nIf you submitted your numbers — good luck! The draws begin soon. 🎱\n📸 Make sure you have a screenshot of your numbers as proof!`);
+    addLog(ok?'Slack: lock notice posted ✅':'Slack: lock notice failed ❌');
+  }catch(e){addLog('Lock failed: '+e.message)}
 }
 
 // ── SLACK ──
 async function postToSlack(text){
   try{
-    const res=await fetch(RENDER_URL+'/slack',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({text})
-    });
+    const res=await fetch(RENDER_URL+'/slack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
     return res.ok;
   }catch(e){addLog('Slack error: '+e.message);return false;}
 }
@@ -329,80 +519,13 @@ async function syncEntries(){
   try{
     const res=await fetch(RENDER_URL+'/entries');
     const data=await res.json();
-    Object.assign(S.entries,data);
-    renderEntries();
+    Object.assign(S.entries,data);renderEntries();
   }catch(e){}
 }
 async function submitEntryToServer(name,picks){
   try{
-    await fetch(RENDER_URL+'/entries',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,picks})
-    });
+    await fetch(RENDER_URL+'/entries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,picks})});
   }catch(e){}
-}
-
-// ── LOTTERY START/STOP ──
-async function syncStatus(){
-  try{
-    const res=await fetch(RENDER_URL+'/status');
-    const data=await res.json();
-    S.started=data.started;S.prize=data.prize;
-    updateStatusUI();
-  }catch(e){}
-}
-function updateStatusUI(){
-  const dot=$('statusDot'),txt=$('statusText'),sb=$('startBtn'),xb=$('stopBtn'),pi=$('prizeInput');
-  if(!dot)return;
-  if(S.started){
-    dot.style.background='#3b6d11';txt.textContent='Lottery active — Prize: '+(S.prize||'TBA');
-    sb.style.display='none';xb.style.display='block';pi.disabled=true;
-  }else{
-    dot.style.background='#aaa';txt.textContent='Lottery not started';
-    sb.style.display='block';xb.style.display='none';pi.disabled=false;
-  }
-}
-async function startLottery(){
-  const prize=$('prizeInput').value.trim();
-  if(!prize){$('startMsg').textContent='Please enter a prize first.';$('startMsg').style.color='#a32d2d';return}
-  try{
-    await fetch(RENDER_URL+'/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prize})});
-    S.started=true;S.prize=prize;S.entries={};
-    updateStatusUI();renderEntries();
-    addLog('Lottery started — Prize: '+prize);
-    $('startMsg').textContent='Lottery started!';$('startMsg').style.color='#3b6d11';
-    setTimeout(()=>$('startMsg').textContent='',2500);
-
-    const siteUrl=window.location.href.split('?')[0];
-    const phrases=[
-      "🎉 IT'S LOTTERY TIME, SMB FAM! 🎉",
-      "🔥 Tonight's jackpot is calling your name! 🔥",
-      "✨ Lucky numbers, lucky you — let's go! ✨"
-    ];
-    const hook=phrases[Math.floor(Math.random()*phrases.length)];
-    const text=`${hook}\n\n🎱 *SMB Lottery — Bayaning Puyat Draw* is now OPEN for tonight's shift!\n\n🏆 *Prize:* ${prize}\n🔢 Pick your 5 lucky numbers (1–42) before the draw!\n\n👉 *Enter here:* ${siteUrl}\n\nDraws happen automatically throughout the shift — good luck, everyone! 🍀`;
-    const ok=await postToSlack(text);
-    addLog(ok?'Slack: lottery announcement posted ✅':'Slack: announcement failed ❌');
-  }catch(e){addLog('Start failed: '+e.message)}
-}
-async function stopLottery(){
-  try{
-    await fetch(RENDER_URL+'/stop',{method:'POST'});
-    S.started=false;updateStatusUI();
-    addLog('Lottery stopped by admin');
-  }catch(e){}
-}
-async function autoStopLottery(){
-  if(!S.started)return;
-  try{
-    await fetch(RENDER_URL+'/stop',{method:'POST'});
-    S.started=false;updateStatusUI();
-    addLog('Lottery auto-stopped at announcement time');
-    const thanks=`🌙 *That's a wrap, SMB Fam!* 🌙\n\nTonight's Bayaning Puyat Lottery has officially closed. Thank you to everyone who joined in the fun! 🎱✨\n\nOur Project Manager, Sir Rendy, wishes you all a well-deserved rest and wants you to know how proud he is to have each and every one of you on this team. 💙\n\nKeep shining, keep showing up — see you at the next draw! 🌟`;
-    const ok=await postToSlack(thanks);
-    addLog(ok?'Slack: thank-you message posted ✅':'Slack: thank-you failed ❌');
-  }catch(e){addLog('Auto-stop failed: '+e.message)}
 }
 
 // ── DRAW ENGINE ──
@@ -418,29 +541,25 @@ function runDraw(label,isTest){
       $('spinStatus').textContent='All 5 drawn!';
       const record={label,nums:[...S.currentNums],date:new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}),time:new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),test:isTest};
       S.drawHistory.unshift(record);S.selectedDraws.unshift(true);
-      renderHistory();renderEntries();
-      return;
+      renderHistory();renderEntries();return;
     }
-    spinOne(S.currentNums,label,n=>{
-      S.currentNums.push(n);
-      renderDrawBalls();
+    spinOne(S.currentNums,n=>{
+      S.currentNums.push(n);renderDrawBalls();
       addLog(`Drew: ${n} (${S.currentNums.length}/5)`);
       $('spinStatus').textContent=`Drew ${n} — ${S.currentNums.length}/5`;
-      // Post live number to Slack
-      postToSlack(`:lottery: *SMB Lottery — ${label}*${isTest?' _(test)_':''}\n:eight_spoked_asterisk: Number drawn: *${n}* (${S.currentNums.length} of 5)`).then(ok=>addLog(ok?`Slack ✅ number ${n}`:`Slack ❌ number ${n}`));
+      postToSlack(`:lottery: *SMB Lottery — ${label}*${isTest?' _(test)_':''}\n:eight_spoked_asterisk: Number drawn: *${n}* (${S.currentNums.length} of 5)`).then(ok=>addLog(ok?`Slack ✅ ${n}`:`Slack ❌ ${n}`));
       setTimeout(doSpin,2500);
     });
   };
   doSpin();
 }
 
-function spinOne(drawnSoFar,label,cb){
+function spinOne(drawnSoFar,cb){
   const avail=[];for(let i=1;i<=42;i++)if(!drawnSoFar.includes(i))avail.push(i);
   if(!avail.length)return;
   const target=avail[Math.floor(Math.random()*avail.length)];
   spinning=true;$('spinBtn').disabled=true;
-  const dur=2600+Math.random()*1400;
-  const extra=4+Math.floor(Math.random()*4);
+  const dur=2600+Math.random()*1400,extra=4+Math.floor(Math.random()*4);
   const slice=(2*Math.PI)/avail.length;
   const tIdx=avail.indexOf(target);
   const tAngle=-(tIdx*slice+slice/2)+Math.PI/2;
@@ -460,14 +579,13 @@ function manualSpin(){
   if(spinning||S.currentNums.length>=5)return;
   const lbl=$('drawLabel').textContent||'Manual draw';
   if(lbl.includes('Waiting'))$('drawLabel').textContent='Manual draw';
-  spinOne(S.currentNums,$('drawLabel').textContent,n=>{
+  spinOne(S.currentNums,n=>{
     S.currentNums.push(n);renderDrawBalls();
     addLog(`Drew: ${n} (${S.currentNums.length}/5)`);
     $('spinStatus').textContent=`Drew ${n} — ${S.currentNums.length}/5`;
     postToSlack(`:lottery: *SMB Lottery — Manual draw*\n:eight_spoked_asterisk: Number drawn: *${n}* (${S.currentNums.length} of 5)`).then(ok=>addLog(ok?`Slack ✅ ${n}`:`Slack ❌ ${n}`));
     if(S.currentNums.length>=5){
-      addLog('Manual draw complete — '+S.currentNums.join(', '));
-      $('spinStatus').textContent='All 5 drawn!';
+      addLog('Complete — '+S.currentNums.join(', '));$('spinStatus').textContent='All 5 drawn!';
       const record={label:'Manual draw',nums:[...S.currentNums],date:new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}),time:new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),test:false};
       S.drawHistory.unshift(record);S.selectedDraws.unshift(true);renderHistory();renderEntries();
     }
@@ -479,7 +597,7 @@ function resetDraw(){S.currentNums=[];wheelAngle=0;$('drawLabel').textContent='W
 
 // ── WHEEL ──
 function renderDrawBalls(){
-  const c=$('drawnNums');c.innerHTML='';
+  const c=$('drawnNums');if(!c)return;c.innerHTML='';
   for(let i=0;i<5;i++){const b=document.createElement('div');b.className='dball'+(S.currentNums[i]===undefined?' pending':'');b.textContent=S.currentNums[i]??'?';c.appendChild(b);}
 }
 function drawWheel(angle,highlight){
@@ -505,7 +623,7 @@ function drawWheel(angle,highlight){
 
 // ── ENTRIES ──
 function renderEntries(){
-  const list=$('entriesList');list.innerHTML='';
+  const list=$('entriesList');if(!list)return;list.innerHTML='';
   const names=Object.keys(S.entries);$('entryCount').textContent=names.length;
   if(!names.length){list.innerHTML='<p style="font-size:13px;color:#aaa;padding:8px 0">No entries yet.</p>';return}
   names.forEach(name=>{
@@ -520,7 +638,7 @@ function renderEntries(){
 
 // ── HISTORY ──
 function renderHistory(){
-  const c=$('historyList');c.innerHTML='';
+  const c=$('historyList');if(!c)return;c.innerHTML='';
   if(!S.drawHistory.length){c.innerHTML='<p style="font-size:13px;color:#aaa">No draws yet.</p>';return}
   S.drawHistory.forEach((r,i)=>{
     const row=document.createElement('div');row.className='h-row';
@@ -533,10 +651,8 @@ function renderHistory(){
   });
 }
 function toggleAll(){
-  const all=S.selectedDraws.every(Boolean);
-  S.selectedDraws=S.selectedDraws.map(()=>!all);
-  $('selAllBtn').textContent=all?'Select all':'Deselect all';
-  renderHistory();
+  const all=S.selectedDraws.every(Boolean);S.selectedDraws=S.selectedDraws.map(()=>!all);
+  $('selAllBtn').textContent=all?'Select all':'Deselect all';renderHistory();
 }
 async function postSelected(){
   const sel=S.drawHistory.filter((r,i)=>S.selectedDraws[i]&&!r.test);
