@@ -4,7 +4,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
-const store = { entries: {}, started: false, prize: "" };
+const store = { entries: {}, started: false, prize: '', entriesLocked: false };
 
 require("http").createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -67,19 +67,18 @@ require("http").createServer((req, res) => {
       res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
     }
 
-    // GET lottery status (started + prize)
+    // GET lottery status
     if (req.method === "GET" && req.url === "/status") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ started: store.started, prize: store.prize })); return;
+      res.end(JSON.stringify({ started: store.started, prize: store.prize, entriesLocked: store.entriesLocked })); return;
     }
 
-    // POST start lottery (sets prize + started flag)
+    // POST start lottery
     if (req.method === "POST" && req.url === "/start") {
       try {
         const { prize } = JSON.parse(body);
-        store.started = true;
-        store.prize = prize || "";
-        store.entries = {};
+        store.started = true; store.prize = prize || "PHP 250.00";
+        store.entries = {}; store.entriesLocked = false;
         res.writeHead(200); res.end(JSON.stringify({ ok: true }));
       } catch { res.writeHead(400); res.end(JSON.stringify({ ok: false })); }
       return;
@@ -87,7 +86,13 @@ require("http").createServer((req, res) => {
 
     // POST stop lottery
     if (req.method === "POST" && req.url === "/stop") {
-      store.started = false;
+      store.started = false; store.entriesLocked = false;
+      res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
+    }
+
+    // POST lock entries
+    if (req.method === "POST" && req.url === "/lock") {
+      store.entriesLocked = true;
       res.writeHead(200); res.end(JSON.stringify({ ok: true })); return;
     }
 
