@@ -379,52 +379,64 @@ function saveSettings(){
 }
 
 function msUntil(t){
-  const now=new Date();const[h,m]=t.split(':').map(Number);
-  const tgt=new Date(now);tgt.setHours(h,m,0,0);if(tgt<=now)tgt.setDate(tgt.getDate()+1);return tgt-now;
+  const now=new Date();
+  const[h,m]=t.split(':').map(Number);
+  const tgt=new Date(now);
+  tgt.setHours(h,m,0,0);
+  // If target is more than 12 hours in the past, it's tomorrow
+  if(tgt-now < -60000) tgt.setDate(tgt.getDate()+1);
+  // If target is in the past by less than a minute, return 0
+  if(tgt-now < 0) return 0;
+  return tgt-now;
 }
 function fmtMs(ms){return[Math.floor(ms/3600000),Math.floor((ms%3600000)/60000),Math.floor((ms%60000)/1000)].map(v=>String(v).padStart(2,'0')).join(':')}
 
 function startClock(){
   if(masterClock)clearInterval(masterClock);
-  masterClock=setInterval(()=>{
-    if(isWeekend()){
-      // Show weekend notice, pause all auto triggers
-      const b=$('lotteryBadge');if(b){b.className='badge weekend';b.innerHTML='<span class="dot orange"></span>Weekend — draws paused';}
-      return;
-    }
-    const now=new Date();
-    const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    const sec=now.getSeconds();
-    const dateKey=now.toDateString();
-
-    // Draw slot countdowns
-    S.drawTimes.forEach((t,i)=>{
-      const el=$(`cd${i}`);if(el){const ms=msUntil(t);el.textContent=fmtMs(ms);el.className='cd'+(ms<60000?' hot':'');}
-      if(t===hhmm&&sec===0&&!firedTimes.has(t+'-'+dateKey)&&!spinning&&S.started){
-        firedTimes.add(t+'-'+dateKey);
-        addLog(`Auto-draw at ${t} PHT`);runDraw(`Draw at ${t} PHT`,false);
+  // Sync status immediately on clock start so S.started is fresh
+  syncStatus().then(()=>{
+    masterClock=setInterval(()=>{
+      if(isWeekend()){
+        const b=$('lotteryBadge');if(b){b.className='badge weekend';b.innerHTML='<span class="dot orange"></span>Weekend — draws paused';}
+        return;
       }
-    });
+      const now=new Date();
+      const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      const sec=now.getSeconds();
+      const dateKey=now.toDateString();
 
-    // Announcement countdown + auto-stop
-    const acd=$('announceCd');if(acd){const ms=msUntil(S.announceTime);acd.textContent=fmtMs(ms);acd.className='cd'+(ms<60000?' hot':'');}
-    if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);autoStopLottery();}
+      // Draw slot countdowns + auto-draw trigger
+      S.drawTimes.forEach((t,i)=>{
+        const el=$(`cd${i}`);if(el){const ms=msUntil(t);el.textContent=fmtMs(ms);el.className='cd'+(ms<60000?' hot':'');}
+        if(t===hhmm&&sec===0){
+          const key=t+'-'+dateKey;
+          if(!firedTimes.has(key)&&!spinning&&S.started){
+            firedTimes.add(key);
+            addLog(`Auto-draw triggered at ${t} PHT`);
+            runDraw(`Draw at ${t} PHT`,false);
+          }
+        }
+      });
 
-    // Auto-start countdown
-    const ascd=$('autoStartCd');if(ascd){const ms=msUntil(S.autoStartTime);ascd.textContent=fmtMs(ms);ascd.className='cd'+(ms<60000?' hot':'');}
-    if(S.autoStartTime===hhmm&&sec===0&&!S.autoStartFired&&!S.started){
-      S.autoStartFired=true;
-      addLog('Auto-starting lottery at '+S.autoStartTime+' PHT');
-      autoStartLottery();
-    }
+      // Announcement countdown + auto-stop
+      const acd=$('announceCd');if(acd){const ms=msUntil(S.announceTime);acd.textContent=fmtMs(ms);acd.className='cd'+(ms<60000?' hot':'');}
+      if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);autoStopLottery();}
 
-    // Entry lock countdown
-    const lkcd=$('lockCd');if(lkcd){const ms=msUntil(S.lockTime);lkcd.textContent=fmtMs(ms);lkcd.className='cd'+(ms<60000?' hot':'');}
-    if(S.lockTime===hhmm&&sec===0&&!S.lockFired&&S.started){
-      S.lockFired=true;
-      lockEntries();
-    }
-  },1000);
+      // Auto-start countdown
+      const ascd=$('autoStartCd');if(ascd){const ms=msUntil(S.autoStartTime);ascd.textContent=fmtMs(ms);ascd.className='cd'+(ms<60000?' hot':'');}
+      if(S.autoStartTime===hhmm&&sec===0&&!S.autoStartFired&&!S.started){
+        S.autoStartFired=true;
+        addLog('Auto-starting lottery at '+S.autoStartTime+' PHT');
+        autoStartLottery();
+      }
+
+      // Entry lock countdown
+      const lkcd=$('lockCd');if(lkcd){const ms=msUntil(S.lockTime);lkcd.textContent=fmtMs(ms);lkcd.className='cd'+(ms<60000?' hot':'');}
+      if(S.lockTime===hhmm&&sec===0&&!S.lockFired&&S.started){
+        S.lockFired=true;lockEntries();
+      }
+    },1000);
+  });
 }
 
 // ── STATUS SYNC ──
