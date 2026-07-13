@@ -238,8 +238,9 @@ function $(id){return document.getElementById(id)}
 function screen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
 function logout(){currentUser=null;$('loginName').value='';$('loginPin').value='';$('loginErr').textContent='';if(masterClock)clearInterval(masterClock);screen('loginScreen')}
 
+function phtNow(){return new Date(Date.now()+8*3600*1000)}
 function isWeekend(){
-  const d=new Date().getDay(); // 0=Sun, 6=Sat
+  const d=phtNow().getUTCDay(); // 0=Sun, 6=Sat (PHT)
   return d===0||d===6;
 }
 
@@ -360,17 +361,20 @@ function renderSlots(){
     c.appendChild(row);
   });
 }
-function saveSchedule(){
+async function saveSchedule(){
   S.drawTimes=S.drawTimes.map((_,i)=>$(`dt${i}`).value);
-  firedTimes.clear();
-  $('scheduleMsg').textContent='Saved.';setTimeout(()=>$('scheduleMsg').textContent='',2000);
+  await pushConfig();
+  $('scheduleMsg').textContent='Saved to server.';setTimeout(()=>$('scheduleMsg').textContent='',2000);
 }
-function saveAnnounce(){S.announceTime=$('announceTime').value;S.announceFired=false;}
-function saveAutoSettings(){
+async function pushConfig(){
+  try{await fetch(RENDER_URL+'/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({drawTimes:S.drawTimes,autoStartTime:S.autoStartTime,lockTime:S.lockTime,announceTime:S.announceTime})});}catch(e){addLog('Config save failed ❌')}
+}
+async function saveAnnounce(){S.announceTime=$('announceTime').value;await pushConfig();}
+async function saveAutoSettings(){
   S.autoStartTime=$('autoStartTime').value;
   S.lockTime=$('lockTime').value;
-  S.autoStartFired=false;S.lockFired=false;
-  $('autoSettingsMsg').textContent='Saved.';setTimeout(()=>$('autoSettingsMsg').textContent='',2000);
+  await pushConfig();
+  $('autoSettingsMsg').textContent='Saved to server.';setTimeout(()=>$('autoSettingsMsg').textContent='',2000);
 }
 function saveSettings(){
   const a=$('newAdmin').value.trim(),g=$('newAgent').value.trim();
@@ -379,10 +383,10 @@ function saveSettings(){
 }
 
 function msUntil(t){
-  const now=new Date();
+  const now=phtNow();
   const[h,m]=t.split(':').map(Number);
   const tgt=new Date(now);
-  tgt.setHours(h,m,0,0);
+  tgt.setUTCHours(h,m,0,0);
   // If target is more than 12 hours in the past, it's tomorrow
   if(tgt-now < -60000) tgt.setDate(tgt.getDate()+1);
   // If target is in the past by less than a minute, return 0
@@ -393,48 +397,19 @@ function fmtMs(ms){return[Math.floor(ms/3600000),Math.floor((ms%3600000)/60000),
 
 function startClock(){
   if(masterClock)clearInterval(masterClock);
-  // Sync status immediately on clock start so S.started is fresh
   syncStatus().then(()=>{
     masterClock=setInterval(()=>{
       if(isWeekend()){
         const b=$('lotteryBadge');if(b){b.className='badge weekend';b.innerHTML='<span class="dot orange"></span>Weekend — draws paused';}
         return;
       }
-      const now=new Date();
-      const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-      const sec=now.getSeconds();
-      const dateKey=now.toDateString();
-
-      // Draw slot countdowns + auto-draw trigger
+      // Countdowns only — all triggers fire on the server (PHT)
       S.drawTimes.forEach((t,i)=>{
         const el=$(`cd${i}`);if(el){const ms=msUntil(t);el.textContent=fmtMs(ms);el.className='cd'+(ms<60000?' hot':'');}
-        if(t===hhmm&&sec===0){
-          const key=t+'-'+dateKey;
-          if(!firedTimes.has(key)&&!spinning&&S.started){
-            firedTimes.add(key);
-            addLog(`Auto-draw triggered at ${t} PHT`);
-            runDraw(`Draw at ${t} PHT`,false);
-          }
-        }
       });
-
-      // Announcement countdown + auto-stop
       const acd=$('announceCd');if(acd){const ms=msUntil(S.announceTime);acd.textContent=fmtMs(ms);acd.className='cd'+(ms<60000?' hot':'');}
-      if(S.announceTime===hhmm&&sec===0&&!S.announceFired){S.announceFired=true;postSummary(true);autoStopLottery();}
-
-      // Auto-start countdown
       const ascd=$('autoStartCd');if(ascd){const ms=msUntil(S.autoStartTime);ascd.textContent=fmtMs(ms);ascd.className='cd'+(ms<60000?' hot':'');}
-      if(S.autoStartTime===hhmm&&sec===0&&!S.autoStartFired&&!S.started){
-        S.autoStartFired=true;
-        addLog('Auto-starting lottery at '+S.autoStartTime+' PHT');
-        autoStartLottery();
-      }
-
-      // Entry lock countdown
       const lkcd=$('lockCd');if(lkcd){const ms=msUntil(S.lockTime);lkcd.textContent=fmtMs(ms);lkcd.className='cd'+(ms<60000?' hot':'');}
-      if(S.lockTime===hhmm&&sec===0&&!S.lockFired&&S.started){
-        S.lockFired=true;lockEntries();
-      }
     },1000);
   });
 }
@@ -445,6 +420,21 @@ async function syncStatus(){
     const res=await fetch(RENDER_URL+'/status');
     const data=await res.json();
     S.started=data.started;S.prize=data.prize;S.entriesLocked=data.entriesLocked||false;
+    if(data.config){
+      S.drawTimes=data.config.drawTimes||S.drawTimes;
+      S.autoStartTime=data.config.autoStartTime||S.autoStartTime;
+      S.lockTime=data.config.lockTime||S.lockTime;
+      S.announceTime=data.config.announceTime||S.announceTime;
+      if($('announceTime'))$('announceTime').value=S.announceTime;
+      if($('autoStartTime'))$('autoStartTime').value=S.autoStartTime;
+      if($('lockTime'))$('lockTime').value=S.lockTime;
+      S.drawTimes.forEach((t,i)=>{const e=$(`dt${i}`);if(e&&document.activeElement!==e)e.value=t;});
+    }
+    if(Array.isArray(data.history)){
+      S.drawHistory=data.history;
+      if(S.selectedDraws.length!==S.drawHistory.length)S.selectedDraws=S.drawHistory.map(()=>true);
+      if(typeof renderHistory==='function'&&currentUser&&currentUser.role==='admin')renderHistory();
+    }
     updateStatusUI();
   }catch(e){}
 }
